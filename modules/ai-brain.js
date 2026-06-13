@@ -7,20 +7,132 @@
 const AIBrain = (() => {
   'use strict';
 
+  // ══════════════════════════════════════════════════════════
+  // FUZZY MATCHING ENGINE (Levenshtein + Typo Dictionary)
+  // ══════════════════════════════════════════════════════════
+
   /**
-   * Normalize input to handle common voice transcription typos (Fuzzy matching)
+   * Levenshtein Distance — measures how "different" two strings are.
+   * A distance of 0 means identical. 1 means one character off, etc.
+   */
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  /**
+   * Find the closest match from a list of candidates.
+   * Returns the best match if it's within the tolerance threshold.
+   */
+  function fuzzyMatch(input, candidates, maxDistance = 2) {
+    let bestMatch = null;
+    let bestDist = Infinity;
+    const lower = input.toLowerCase();
+    
+    for (const candidate of candidates) {
+      const dist = levenshtein(lower, candidate.toLowerCase());
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestMatch = candidate;
+      }
+    }
+    
+    // Only accept if the distance is within tolerance
+    // For short words (<=4 chars), allow max 1 edit; for longer, allow 2
+    const threshold = lower.length <= 4 ? 1 : maxDistance;
+    return bestDist <= threshold ? bestMatch : null;
+  }
+
+  /**
+   * Massive typo dictionary — maps common voice misrecognitions to correct words.
+   * This covers phonetic mistakes, accent-based errors, and keyboard typos.
+   */
+  const TYPO_MAP = {
+    // Actions
+    'opin': 'open', 'opn': 'open', 'openn': 'open', 'ope': 'open', 'opne': 'open',
+    'clos': 'close', 'clsoe': 'close', 'clse': 'close', 'clase': 'close',
+    'serch': 'search', 'seach': 'search', 'sarch': 'search', 'saerch': 'search',
+    'scrool': 'scroll', 'scrol': 'scroll', 'scrill': 'scroll', 'skroll': 'scroll',
+    'scrennshot': 'screenshot', 'screensnot': 'screenshot', 'screnshot': 'screenshot',
+    'bookmak': 'bookmark', 'bokmark': 'bookmark', 'boomark': 'bookmark', 'boookmark': 'bookmark',
+    'histori': 'history', 'histry': 'history', 'histroy': 'history',
+    'downlod': 'download', 'donwload': 'download', 'downlaod': 'download',
+    'relaod': 'reload', 'relod': 'reload', 'refesh': 'refresh', 'refrsh': 'refresh',
+    'navgate': 'navigate', 'naviage': 'navigate',
+    'duplcate': 'duplicate', 'duplaicate': 'duplicate', 'dupliate': 'duplicate',
+    'sumrize': 'summarize', 'summerize': 'summarize', 'sumarize': 'summarize',
+    'minimze': 'minimize', 'minimise': 'minimize',
+    'fullscren': 'fullscreen', 'fulscreen': 'fullscreen',
+    'incognto': 'incognito', 'incognitto': 'incognito', 'incognitoo': 'incognito',
+    'swich': 'switch', 'swicth': 'switch', 'swtich': 'switch',
+    'previus': 'previous', 'previuos': 'previous', 'prevous': 'previous',
+    'settigns': 'settings', 'setings': 'settings', 'settins': 'settings',
+    'extention': 'extension', 'extensin': 'extension', 'extnsion': 'extension',
+    'privcy': 'privacy', 'priavcy': 'privacy', 'privecy': 'privacy',
+    'pasword': 'password', 'passwrod': 'password', 'passwrd': 'password',
+    'notifcation': 'notification', 'notifiation': 'notification',
+    'accesibility': 'accessibility', 'acessibility': 'accessibility',
+    'languae': 'language', 'langauge': 'language', 'languge': 'language',
+    'apperance': 'appearance', 'apearance': 'appearance',
+
+    // Targets
+    'tub': 'tab', 'tabb': 'tab', 'tag': 'tab', 'tap': 'tab',
+    'noo': 'new', 'nw': 'new', 'ne': 'new',
+    'windw': 'window', 'widnow': 'window', 'wndow': 'window',
+    'pge': 'page', 'pag': 'page', 'pgae': 'page',
+    'syte': 'site', 'iste': 'site',
+
+    // Sites
+    'youtub': 'youtube', 'yotube': 'youtube', 'u tube': 'youtube', 'you tube': 'youtube',
+    'gogle': 'google', 'googl': 'google', 'googel': 'google',
+    'gmal': 'gmail', 'gmial': 'gmail', 'gmaill': 'gmail',
+    'twitr': 'twitter', 'twiter': 'twitter',
+    'facbook': 'facebook', 'facebok': 'facebook', 'fcebook': 'facebook',
+    'instagam': 'instagram', 'instragram': 'instagram', 'insagram': 'instagram',
+    'redit': 'reddit', 'redditt': 'reddit',
+    'linkdin': 'linkedin', 'linkdein': 'linkedin', 'linkedn': 'linkedin',
+    'amazn': 'amazon', 'amzon': 'amazon',
+    'flipkrt': 'flipkart', 'flipkat': 'flipkart',
+    'whtsapp': 'whatsapp', 'watsapp': 'whatsapp', 'whatsap': 'whatsapp',
+
+    // Filler words to strip
+    'plz': '', 'pls': '', 'please': '', 'kindly': '', 'just': '',
+    'wanna': '', 'gonna': '', 'lemme': 'let me'
+  };
+
+  /**
+   * Normalize input — fix typos using the dictionary, strip filler words
    */
   function normalizeInput(input) {
-    return input
-      .replace(/\b(wanna|want to)\b/gi, '')
-      .replace(/\b(please|kindly|could you|would you|can you)\b/gi, '')
-      .replace(/\b(opin|opn|openn|launch)\b/gi, 'open')
-      .replace(/\b(shut down|turn off)\b/gi, 'shutdown')
-      .replace(/\b(tub|tabb|tag|tap)\b/gi, 'tab')
-      .replace(/\b(youtub|u tube|you tube)\b/gi, 'youtube')
-      .replace(/\b(scrill|scrool)\b/gi, 'scroll')
-      .replace(/\s+/g, ' ')
-      .trim();
+    let result = input;
+    
+    // Apply the typo map (word-by-word replacement)
+    const words = result.split(/\s+/);
+    const fixed = words.map(word => {
+      const lower = word.toLowerCase();
+      // 1. Check exact match in typo map
+      if (TYPO_MAP[lower] !== undefined) {
+        return TYPO_MAP[lower];
+      }
+      // 2. Check fuzzy match against typo map keys (for typos OF typos!)
+      const closestTypo = fuzzyMatch(lower, Object.keys(TYPO_MAP), 1);
+      if (closestTypo && TYPO_MAP[closestTypo] !== undefined) {
+        return TYPO_MAP[closestTypo];
+      }
+      return word;
+    }).filter(w => w !== ''); // Remove stripped filler words
+    
+    return fixed.join(' ').replace(/\s+/g, ' ').trim();
   }
 
   /**
@@ -66,7 +178,8 @@ const AIBrain = (() => {
   }
 
   /**
-   * Smart guess: try to figure out what the user wants without AI
+   * Smart guess: try to figure out what the user wants without AI.
+   * Now enhanced with Levenshtein fuzzy matching for keywords and site names.
    */
   function smartGuess(input) {
     const lower = input.toLowerCase();
@@ -81,19 +194,30 @@ const AIBrain = (() => {
       };
     }
 
-    // Check if it contains a known site name
+    // Check if it contains a known site name (exact or fuzzy)
     const sites = CommandPatterns.siteShortcuts;
-    for (const [name, url] of Object.entries(sites)) {
-      if (lower.includes(name) && (lower.includes('open') || lower.includes('go') || lower.includes('show'))) {
+    const siteNames = Object.keys(sites);
+    for (const word of words) {
+      // Exact match
+      if (sites[word]) {
         return {
           intent: 'navigate',
-          data: { url, siteName: name, target: name },
+          data: { url: sites[word], siteName: word, target: word },
+          response: null
+        };
+      }
+      // Fuzzy match (e.g. "youtbe" → "youtube")
+      const fuzzySite = fuzzyMatch(word, siteNames, 2);
+      if (fuzzySite && sites[fuzzySite]) {
+        return {
+          intent: 'navigate',
+          data: { url: sites[fuzzySite], siteName: fuzzySite, target: fuzzySite },
           response: null
         };
       }
     }
 
-    // Check for action keywords
+    // Check for action keywords (exact or fuzzy)
     const actionKeywords = {
       'close': 'closeTab',
       'shut': 'closeTab',
@@ -116,17 +240,45 @@ const AIBrain = (() => {
       'summary': 'summarizePage',
       'scroll': 'scroll',
       'help': 'help',
+      'settings': 'openSettingsPage',
+      'privacy': 'openSettingsPage',
+      'password': 'openSettingsPage',
+      'extensions': 'openSettingsPage',
       'note': lower.includes('show') || lower.includes('list') ? 'listNotes' : null,
       'timer': lower.includes('show') || lower.includes('list') ? 'listTimers' : null
     };
 
-    for (const [keyword, intent] of Object.entries(actionKeywords)) {
-      if (intent && words.some(w => w.startsWith(keyword))) {
+    const allKeywords = Object.keys(actionKeywords);
+
+    for (const word of words) {
+      // Exact keyword match
+      if (actionKeywords[word] && actionKeywords[word] !== null) {
+        const intent = actionKeywords[word];
         const data = {};
         if (intent === 'scroll') {
           data.direction = lower.includes('up') ? 'up' : 'down';
         }
+        if (intent === 'openSettingsPage') {
+          data.page = 'chrome://settings';
+          data.label = 'Settings';
+        }
         return { intent, data, response: null };
+      }
+      // Fuzzy keyword match (e.g. "bookmak" → "bookmark")
+      if (word.length >= 4) {
+        const fuzzyKeyword = fuzzyMatch(word, allKeywords, 2);
+        if (fuzzyKeyword && actionKeywords[fuzzyKeyword] !== null) {
+          const intent = actionKeywords[fuzzyKeyword];
+          const data = {};
+          if (intent === 'scroll') {
+            data.direction = lower.includes('up') ? 'up' : 'down';
+          }
+          if (intent === 'openSettingsPage') {
+            data.page = 'chrome://settings';
+            data.label = 'Settings';
+          }
+          return { intent, data, response: null };
+        }
       }
     }
 
