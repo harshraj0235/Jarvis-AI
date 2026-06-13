@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jarvis — AI Browser Agent</title>
+  <link rel="stylesheet" href="css/sidepanel.css">
+</head>
+<body>
+  <div class="app-container" id="app-container">
+
+    <!-- ── Header ──────────────────────────────────────── -->
+    <header class="panel-header" id="panel-header">
+      <div class="header-brand">
+        <div class="logo-icon" id="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+            <line x1="9" y1="22" x2="15" y2="22"/>
+            <line x1="10" y1="19" x2="14" y2="19"/>
+            <circle cx="12" cy="9" r="2" fill="currentColor" opacity="0.3"/>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1 class="header-title">Jarvis AI</h1>
+          <p class="header-subtitle" id="status-text">
+            <span class="status-dot"></span>
+            &nbsp;Ready to assist
+          </p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="header-btn" id="clear-chat-btn" title="Clear chat">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <path d="M2 4h12M5.33 4V2.67a.67.67 0 0 1 .67-.67h4a.67.67 0 0 1 .67.67V4M12.67 4v9.33a.67.67 0 0 1-.67.67H4a.67.67 0 0 1-.67-.67V4"/>
+          </svg>
+        </button>
+        <button class="header-btn" id="theme-toggle-btn" title="Toggle theme">
+          <svg class="theme-icon-dark" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <circle cx="8" cy="8" r="3.2"/>
+            <path d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.4 3.4l.85.85M11.75 11.75l.85.85M3.4 12.6l.85-.85M11.75 4.25l.85-.85"/>
+          </svg>
+          <svg class="theme-icon-light" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" style="display:none;">
+            <path d="M14 9.3A6 6 0 0 1 6.7 2 6 6 0 1 0 14 9.3z"/>
+          </svg>
+        </button>
+        <button class="header-btn" id="settings-btn" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <circle cx="8" cy="8" r="2"/>
+            <path d="M13.3 10a1.1 1.1 0 0 0 .22 1.22l.04.04a1.34 1.34 0 1 1-1.9 1.9l-.04-.04A1.1 1.1 0 0 0 10 13.3v.07A1.33 1.33 0 0 1 8.67 14.7h0a1.33 1.33 0 0 1-1.34-1.33V13.3a1.1 1.1 0 0 0-.72-1.01 1.1 1.1 0 0 0-1.22.22l-.04.04a1.34 1.34 0 1 1-1.9-1.9l.04-.04A1.1 1.1 0 0 0 3.7 10a1.1 1.1 0 0 0-1.01-.72h-.07a1.33 1.33 0 0 1 0-2.67H2.7a1.1 1.1 0 0 0 1.01-.72 1.1 1.1 0 0 0-.22-1.22l-.04-.04a1.34 1.34 0 1 1 1.9-1.9l.04.04A1.1 1.1 0 0 0 6 3.7h0a1.1 1.1 0 0 0 .67-1.01v-.07a1.33 1.33 0 0 1 2.67 0V2.7a1.1 1.1 0 0 0 .72 1.01 1.1 1.1 0 0 0 1.22-.22l.04-.04a1.34 1.34 0 1 1 1.9 1.9l-.04.04A1.1 1.1 0 0 0 12.3 6h0a1.1 1.1 0 0 0 1.01.67h.07a1.33 1.33 0 0 1 0 2.67H13.3a1.1 1.1 0 0 0-1.01.72z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Chat Area ───────────────────────────────────── -->
+    <div class="chat-area" id="chat-area">
+      <!-- Welcome screen (shown initially) -->
+      <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+            <line x1="9" y1="22" x2="15" y2="22"/>
+            <line x1="10" y1="19" x2="14" y2="19"/>
+          </svg>
+        </div>
+        <h2 class="welcome-title">Hey, I'm Jarvis</h2>
+        <p class="welcome-subtitle">Your AI browser assistant. Tell me what to do — by voice or text — and I'll handle it.</p>
+        <div class="welcome-suggestions" id="welcome-suggestions">
+          <div class="welcome-suggestion" data-command="Open YouTube">
+            <span class="ws-icon">🌐</span>
+            <span>"Open YouTube"</span>
+          </div>
+          <div class="welcome-suggestion" data-command="Search for trending tech news">
+            <span class="ws-icon">🔍</span>
+            <span>"Search for trending tech news"</span>
+          </div>
+          <div class="welcome-suggestion" data-command="Show my recent history">
+            <span class="ws-icon">📜</span>
+            <span>"Show my recent history"</span>
+          </div>
+          <div class="welcome-suggestion" data-command="Bookmark this page">
+            <span class="ws-icon">⭐</span>
+            <span>"Bookmark this page"</span>
+          </div>
+          <div class="welcome-suggestion" data-command="What can you do?">
+            <span class="ws-icon">🤖</span>
+            <span>"What can you do?"</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Quick Actions (pill buttons) ────────────────── -->
+    <div class="quick-actions" id="quick-actions">
+      <button class="quick-action-btn" data-command="New tab"><span class="qa-icon">➕</span>New Tab</button>
+      <button class="quick-action-btn" data-command="Close tab"><span class="qa-icon">✖</span>Close Tab</button>
+      <button class="quick-action-btn" data-command="Screenshot"><span class="qa-icon">📸</span>Screenshot</button>
+      <button class="quick-action-btn" data-command="Summarize this page"><span class="qa-icon">📝</span>Summarize</button>
+      <button class="quick-action-btn" data-command="Show bookmarks"><span class="qa-icon">⭐</span>Bookmarks</button>
+    </div>
+
+    <!-- ── Input Area ──────────────────────────────────── -->
+    <div class="input-area" id="input-area">
+      <!-- Voice transcript overlay -->
+      <div class="voice-transcript" id="voice-transcript">
+        <div class="voice-transcript-label">
+          <span class="rec-dot"></span>
+          Listening...
+        </div>
+        <div class="voice-transcript-text" id="voice-transcript-text">...</div>
+      </div>
+
+      <div class="input-wrapper" id="input-wrapper">
+        <textarea class="chat-input" id="chat-input" placeholder="Type a command or ask me anything..." rows="1"></textarea>
+        <button class="mic-btn" id="mic-btn" title="Voice command (hold or click)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="1" width="6" height="12" rx="3"/>
+            <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+            <line x1="12" y1="18" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+        <button class="send-btn" id="send-btn" title="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Settings Overlay ────────────────────────────── -->
+    <div class="settings-overlay" id="settings-overlay">
+      <div class="settings-panel">
+        <div class="settings-header">
+          <h2>⚙️ Settings</h2>
+          <button class="settings-close" id="settings-close">&times;</button>
+        </div>
+        <div class="settings-body">
+          <div class="settings-group">
+            <div class="settings-group-title">Voice</div>
+            <div class="setting-item">
+              <div>
+                <div class="setting-label">Voice Responses</div>
+                <div class="setting-desc">Jarvis speaks responses aloud</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="setting-voice-response">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <div>
+                <div class="setting-label">Continuous Listening</div>
+                <div class="setting-desc">Keep mic active between commands</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="setting-continuous-listen">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">Behavior</div>
+            <div class="setting-item">
+              <div>
+                <div class="setting-label">Confirm Destructive Actions</div>
+                <div class="setting-desc">Ask before clearing history, closing all tabs, etc.</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="setting-confirm-destructive" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <div>
+                <div class="setting-label">Sound Effects</div>
+                <div class="setting-desc">Play sounds for actions</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="setting-sounds" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">About</div>
+            <div class="setting-item">
+              <div>
+                <div class="setting-label">Jarvis AI Browser Agent</div>
+                <div class="setting-desc">Version 1.0.0 • Built with ❤️</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="modules/command-patterns.js"></script>
+  <script src="modules/chat-renderer.js"></script>
+  <script src="modules/voice-engine.js"></script>
+  <script src="modules/ai-brain.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

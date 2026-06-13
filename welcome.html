@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Jarvis AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body {
+      width:100%; height:100%;
+      font-family:'Inter',-apple-system,sans-serif;
+      background:#0a0e1a;
+      color:#f1f5f9;
+      overflow:hidden;
+    }
+    body {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    /* Ambient background */
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(0,212,255,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(139,92,246,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(236,72,153,0.04) 0%, transparent 60%);
+      animation: bgFloat 15s ease-in-out infinite alternate;
+      z-index:0;
+    }
+    @keyframes bgFloat {
+      0% { transform: scale(1) translate(0,0); }
+      100% { transform: scale(1.05) translate(1%,1%); }
+    }
+    .container {
+      position:relative; z-index:1;
+      text-align:center;
+      max-width:560px;
+      padding:40px 32px;
+    }
+    /* Logo */
+    .logo {
+      width:100px; height:100px;
+      border-radius:24px;
+      background:linear-gradient(135deg,#00d4ff,#8b5cf6);
+      display:flex; align-items:center; justify-content:center;
+      margin:0 auto 28px;
+      box-shadow: 0 0 40px rgba(0,212,255,0.25), 0 0 80px rgba(139,92,246,0.15);
+      animation: logoFloat 3s ease-in-out infinite;
+      position:relative;
+    }
+    .logo::after {
+      content:'';
+      position:absolute; inset:-3px;
+      border-radius:inherit;
+      background:linear-gradient(135deg,#00d4ff,#8b5cf6);
+      opacity:0.3; filter:blur(16px); z-index:-1;
+    }
+    @keyframes logoFloat {
+      0%,100% { transform:translateY(0); }
+      50% { transform:translateY(-8px); }
+    }
+    .logo svg { width:48px; height:48px; color:#fff; }
+
+    h1 {
+      font-size:36px; font-weight:900;
+      letter-spacing:-0.03em;
+      background:linear-gradient(135deg,#00d4ff,#8b5cf6,#ec4899);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text;
+      margin-bottom:12px;
+    }
+    .subtitle {
+      font-size:16px; color:#94a3b8;
+      line-height:1.6;
+      margin-bottom:40px;
+    }
+    .subtitle strong { color:#f1f5f9; }
+
+    /* Steps */
+    .steps {
+      display:flex; flex-direction:column;
+      gap:16px; margin-bottom:36px;
+      text-align:left;
+    }
+    .step {
+      display:flex; gap:14px; align-items:flex-start;
+      padding:16px 20px;
+      background:rgba(17,24,39,0.6);
+      border:1px solid rgba(148,163,184,0.1);
+      border-radius:14px;
+      backdrop-filter:blur(12px);
+      transition: all 0.3s ease;
+    }
+    .step:hover { border-color:rgba(0,212,255,0.3); transform:translateX(4px); }
+    .step-num {
+      width:32px; height:32px; border-radius:10px;
+      background:linear-gradient(135deg,#00d4ff,#8b5cf6);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:14px; flex-shrink:0;
+      color:#fff;
+    }
+    .step-text { flex:1; }
+    .step-title { font-weight:700; font-size:14px; margin-bottom:3px; color:#f1f5f9; }
+    .step-desc { font-size:12px; color:#94a3b8; line-height:1.5; }
+
+    /* Button */
+    .btn-primary {
+      display:inline-flex; align-items:center; gap:10px;
+      padding:16px 40px;
+      background:linear-gradient(135deg,#00d4ff,#8b5cf6);
+      color:#fff; border:none; border-radius:14px;
+      font-family:'Inter',sans-serif; font-size:16px; font-weight:700;
+      cursor:pointer;
+      transition:all 0.3s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 0 4px 20px rgba(0,212,255,0.25);
+      letter-spacing:-0.01em;
+    }
+    .btn-primary:hover {
+      transform:translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 30px rgba(0,212,255,0.35);
+    }
+    .btn-primary:active { transform:scale(0.98); }
+    .btn-primary svg { width:20px; height:20px; }
+
+    .btn-secondary {
+      display:inline-block;
+      margin-top:14px;
+      padding:10px 24px;
+      background:transparent;
+      border:1px solid rgba(148,163,184,0.2);
+      border-radius:10px;
+      color:#94a3b8;
+      font-family:'Inter',sans-serif; font-size:13px;
+      cursor:pointer;
+      transition:all 0.2s ease;
+    }
+    .btn-secondary:hover { border-color:rgba(0,212,255,0.4); color:#f1f5f9; }
+
+    /* Status */
+    .status {
+      margin-top:20px;
+      font-size:14px;
+      display:none;
+    }
+    .status.granted {
+      display:block;
+      color:#10b981;
+    }
+    .status.denied {
+      display:block;
+      color:#ef4444;
+    }
+    .status.granted::before { content:'✅ '; }
+    .status.denied::before { content:'❌ '; }
+
+    /* Success screen */
+    .success-screen {
+      display:none;
+    }
+    .success-screen.visible { display:block; }
+    .success-icon {
+      font-size:64px;
+      margin-bottom:20px;
+      animation: successPop 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes successPop {
+      from { transform:scale(0); opacity:0; }
+      to { transform:scale(1); opacity:1; }
+    }
+    .features-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:8px; margin:24px 0;
+      text-align:left;
+    }
+    .feature-item {
+      padding:10px 12px;
+      background:rgba(17,24,39,0.5);
+      border:1px solid rgba(148,163,184,0.08);
+      border-radius:10px;
+      font-size:12px; color:#94a3b8;
+    }
+    .feature-item span { margin-right:6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Setup Screen -->
+    <div id="setup-screen">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+          <line x1="9" y1="22" x2="15" y2="22"/>
+          <line x1="10" y1="19" x2="14" y2="19"/>
+          <circle cx="12" cy="9" r="2" fill="currentColor" opacity="0.3"/>
+        </svg>
+      </div>
+      <h1>Welcome to Jarvis AI</h1>
+      <p class="subtitle">Your <strong>voice-controlled browser agent</strong>. Control your entire browser with natural voice commands — no internet needed.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <div class="step-title">🎤 Allow Microphone Access</div>
+            <div class="step-desc">Required for voice commands. Jarvis listens for your commands and executes them instantly.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <div class="step-title">🗣️ Always Listening Mode</div>
+            <div class="step-desc">Even when the side panel is closed, Jarvis can listen and execute commands in the background.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <div class="step-title">🧠 Learns From You</div>
+            <div class="step-desc">The more you use it, the smarter it gets. It learns your unique way of giving commands.</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="enable-mic-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="1" width="6" height="12" rx="3"/>
+          <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+          <line x1="12" y1="18" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+        Enable Voice Control
+      </button>
+      <br>
+      <button class="btn-secondary" id="skip-btn">Skip for now — use text only</button>
+
+      <div class="status" id="status"></div>
+    </div>
+
+    <!-- Success Screen -->
+    <div class="success-screen" id="success-screen">
+      <div class="success-icon">🎉</div>
+      <h1>You're All Set!</h1>
+      <p class="subtitle">Jarvis is ready to control your browser. Click the <strong>Jarvis icon</strong> in the toolbar to open the side panel, or just start speaking!</p>
+
+      <div class="features-grid">
+        <div class="feature-item"><span>🌐</span>Open any website</div>
+        <div class="feature-item"><span>📑</span>Manage tabs</div>
+        <div class="feature-item"><span>🔍</span>Google search</div>
+        <div class="feature-item"><span>⭐</span>Manage bookmarks</div>
+        <div class="feature-item"><span>📸</span>Take screenshots</div>
+        <div class="feature-item"><span>📝</span>Summarize pages</div>
+        <div class="feature-item"><span>⏰</span>Set timers</div>
+        <div class="feature-item"><span>🤖</span>100+ commands</div>
+      </div>
+
+      <button class="btn-primary" id="get-started-btn">Open Jarvis Side Panel</button>
+    </div>
+  </div>
+
+  <script>
+    const enableMicBtn = document.getElementById('enable-mic-btn');
+    const skipBtn = document.getElementById('skip-btn');
+    const getStartedBtn = document.getElementById('get-started-btn');
+    const statusEl = document.getElementById('status');
+    const setupScreen = document.getElementById('setup-screen');
+    const successScreen = document.getElementById('success-screen');
+
+    enableMicBtn.addEventListener('click', async () => {
+      try {
+        enableMicBtn.textContent = 'Requesting access...';
+        enableMicBtn.disabled = true;
+
+        // Request microphone permission
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Stop the stream immediately (we just needed the permission)
+        stream.getTracks().forEach(track => track.stop());
+
+        // Save permission granted state
+        chrome.storage.local.set({
+          jarvis_mic_permission: true,
+          jarvis_always_listen: true
+        });
+
+        // Tell background to start offscreen voice listener
+        chrome.runtime.sendMessage({ action: 'ENABLE_ALWAYS_LISTEN' }).catch(() => {});
+
+        showSuccess();
+      } catch (err) {
+        statusEl.className = 'status denied';
+        statusEl.textContent = 'Microphone access denied. You can still use text commands in the side panel.';
+        enableMicBtn.textContent = 'Try Again';
+        enableMicBtn.disabled = false;
+
+        chrome.storage.local.set({ jarvis_mic_permission: false });
+      }
+    });
+
+    skipBtn.addEventListener('click', () => {
+      chrome.storage.local.set({
+        jarvis_mic_permission: false,
+        jarvis_always_listen: false
+      });
+      showSuccess();
+    });
+
+    getStartedBtn.addEventListener('click', () => {
+      // Open side panel by navigating to a page and triggering it
+      chrome.runtime.sendMessage({ action: 'OPEN_SIDE_PANEL' }).catch(() => {});
+      window.close();
+    });
+
+    function showSuccess() {
+      setupScreen.style.display = 'none';
+      successScreen.classList.add('visible');
+    }
+  </script>
+</body>
+</html>
