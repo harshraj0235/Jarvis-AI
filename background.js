@@ -9,9 +9,18 @@ let activeTimers = {};   // { timerId: { label, endTime, alarmName } }
 let notes = [];          // { text, timestamp }
 let offscreenCreated = false;
 
-// Load notes from storage
-chrome.storage.local.get('jarvis_notes', (result) => {
+// Load persisted state from storage (survives service worker sleep)
+chrome.storage.local.get(['jarvis_notes', 'jarvis_timers'], (result) => {
   notes = result.jarvis_notes || [];
+  
+  // Restore timers — prune any that have already expired
+  const savedTimers = result.jarvis_timers || {};
+  const now = Date.now();
+  for (const [id, timer] of Object.entries(savedTimers)) {
+    if (timer.endTime > now) {
+      activeTimers[id] = timer;
+    }
+  }
 });
 
 // ── On Install: Open welcome page & set up side panel ──────
@@ -187,6 +196,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     }).catch(() => {});
 
     delete activeTimers[timerId];
+    chrome.storage.local.set({ jarvis_timers: activeTimers });
   }
 });
 
@@ -1096,6 +1106,9 @@ async function setTimer(seconds, label) {
   const endTime = Date.now() + seconds * 1000;
 
   activeTimers[alarmName] = { label, endTime };
+  
+  // Persist to storage so timers survive service worker sleep
+  chrome.storage.local.set({ jarvis_timers: activeTimers });
 
   await chrome.alarms.create(alarmName, {
     delayInMinutes: seconds / 60
@@ -1111,15 +1124,34 @@ async function cancelAllTimers() {
   }
   const count = names.length;
   activeTimers = {};
+  chrome.storage.local.set({ jarvis_timers: activeTimers });
   return { success: true, cancelledCount: count };
+}
+
+// ── Restricted Page Check (friendly errors) ─────────────────
+function checkRestrictedPage(tab) {
+  const url = tab.url || '';
+  if (url.startsWith('chrome://')) {
+    throw new Error('🚫 This is a Chrome internal page — I can\'t interact with it for security reasons. Try this on a normal website!');
+  }
+  if (url.startsWith('chrome-extension://')) {
+    throw new Error('🚫 This is an extension page — browser security prevents me from interacting here.');
+  }
+  if (url.includes('chromewebstore.google.com')) {
+    throw new Error('🚫 The Chrome Web Store blocks extensions from modifying it. Please try on a different site!');
+  }
+  if (url.startsWith('about:') || url.startsWith('edge://') || url.startsWith('brave://')) {
+    throw new Error('🚫 This is a browser internal page. I can only work on regular websites.');
+  }
+  if (!url || url === 'chrome://newtab/') {
+    throw new Error('🚫 This is an empty tab. Please navigate to a website first!');
+  }
 }
 
 // ── Execute script on active tab ────────────────────────────
 async function executeOnActiveTab(code) {
   const tab = await getActiveTab();
-  if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('chrome-extension://')) {
-    throw new Error('Cannot interact with Chrome internal pages');
-  }
+  checkRestrictedPage(tab);
   await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: new Function(code)
@@ -1130,9 +1162,7 @@ async function executeOnActiveTab(code) {
 // ── Execute content script action ───────────────────────────
 async function executeContentAction(type, data) {
   const tab = await getActiveTab();
-  if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('chrome-extension://')) {
-    throw new Error('Cannot interact with Chrome internal pages');
-  }
+  checkRestrictedPage(tab);
 
   try {
     const response = await chrome.tabs.sendMessage(tab.id, {
@@ -1156,14 +1186,32 @@ async function executeContentAction(type, data) {
   }
 }
 
-// ── Native Messaging ────────────────────────────────────────
+// ── Native Messaging (with timeout & auto-recovery) ─────────
+const NATIVE_HOST_TIMEOUT_MS = 15000; // 15 seconds
+
 function sendNativeCommand(message) {
   return new Promise((resolve, reject) => {
+    // Timeout guard — if the host hangs, don't freeze the extension
+    const timeoutId = setTimeout(() => {
+      reject(new Error('⏱️ The Desktop Host took too long to respond. It may have crashed. Please check that Node.js is running and try again.'));
+    }, NATIVE_HOST_TIMEOUT_MS);
+
     try {
       chrome.runtime.sendNativeMessage('com.jarvis.desktop', message, (response) => {
+        clearTimeout(timeoutId);
+
         if (chrome.runtime.lastError) {
-          console.error('[Jarvis] Native messaging error:', chrome.runtime.lastError.message);
-          reject(new Error('Native Host not found. Have you run the install.bat script?'));
+          const errMsg = chrome.runtime.lastError.message || '';
+          console.error('[Jarvis] Native messaging error:', errMsg);
+
+          // Provide specific, actionable error messages
+          if (errMsg.includes('not found') || errMsg.includes('Specified native messaging host not found')) {
+            reject(new Error('💻 Desktop Host not installed. Open the "native-host" folder and double-click "install.bat" to set it up.'));
+          } else if (errMsg.includes('host has exited') || errMsg.includes('Native host has exited')) {
+            reject(new Error('💻 Desktop Host crashed. Make sure Node.js is installed on your computer, then try again.'));
+          } else {
+            reject(new Error(`💻 Desktop connection error: ${errMsg}`));
+          }
           return;
         }
         
@@ -1174,7 +1222,8 @@ function sendNativeCommand(message) {
         }
       });
     } catch (err) {
-      reject(err);
+      clearTimeout(timeoutId);
+      reject(new Error('💻 Could not connect to the Desktop Host. Is Chrome up to date?'));
     }
   });
 }

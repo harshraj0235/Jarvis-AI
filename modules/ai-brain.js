@@ -8,10 +8,31 @@ const AIBrain = (() => {
   'use strict';
 
   /**
+   * Normalize input to handle common voice transcription typos (Fuzzy matching)
+   */
+  function normalizeInput(input) {
+    return input
+      .replace(/\b(wanna|want to)\b/gi, '')
+      .replace(/\b(please|kindly|could you|would you|can you)\b/gi, '')
+      .replace(/\b(opin|opn|openn|launch)\b/gi, 'open')
+      .replace(/\b(shut down|turn off)\b/gi, 'shutdown')
+      .replace(/\b(tub|tabb|tag|tap)\b/gi, 'tab')
+      .replace(/\b(youtub|u tube|you tube)\b/gi, 'youtube')
+      .replace(/\b(scrill|scrool)\b/gi, 'scroll')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
    * Process user input — LOCAL-FIRST, AI-FREE for commands
    */
   async function processInput(input) {
-    const trimmed = input.trim();
+    if (!input || typeof input !== 'string') return { intent: 'none', data: {}, response: "I didn't catch that." };
+
+    // Normalize input to handle common voice transcription typos
+    const normalizedInput = normalizeInput(input);
+    const trimmed = normalizedInput.trim();
+    
     if (!trimmed) {
       return { intent: 'none', data: {}, response: "I didn't catch that. Could you say it again?" };
     }
