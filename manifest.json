@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Jarvis — AI Browser Agent",
+  "name": "Jarvis: AI Voice Assistant & Browser Agent",
   "version": "2.0.0",
-  "description": "Control your browser with voice or text commands. An AI-powered agent that automates tabs, bookmarks, history, navigation, page interaction, and more — 100% offline.",
+  "description": "Automate your browser with AI voice and text commands. Manage tabs, bookmarks, and boost productivity 100% offline with your AI agent.",
 
   "permissions": [
     "sidePanel",

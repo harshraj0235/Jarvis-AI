@@ -1,59 +1,60 @@
-# Jarvis AI - Browser Automation Agent
+# Jarvis: AI Voice Assistant & Browser Agent
 
-A powerful, entirely **offline**, zero-AI-dependency browser automation extension for Google Chrome. It leverages regex-based intent classification, native device integration via Node.js, and local capabilities to give you full voice and text control over your browser and desktop.
+**The ultimate AI-powered voice assistant and browser agent for Chrome. Automate your web experience, boost productivity, and control your browser 100% offline.**
 
-## 🚀 Features
+Welcome to **Jarvis 2.0**, your intelligent, privacy-first AI companion. Built for power users, professionals, and anyone who wants to supercharge their browsing workflow, Jarvis allows you to interact with your browser using natural language — via voice or text. 
 
-- **Offline First**: All processing, intent matching, and command parsing happens completely locally in the browser. Zero reliance on OpenAI or external cloud AI services.
-- **Voice Control**: Uses the local Web Speech API (running in a background offscreen document) to provide always-on or click-to-talk voice commands.
-- **Browser Automation**: 90+ recognized commands for tab management, window management, bookmarks, history, settings, and page interactions.
-- **Full Settings Control**: Command every Chrome settings page via voice (`"open privacy settings"`, `"open password settings"`, etc.).
-- **Native Desktop Integration**: Comes with a local Node.js Native Messaging Host.
-  - Launch PC applications (`"open calculator"`)
-  - Install Windows applications silently using Winget (`"install VLC"`)
-  - Control system power (`"lock computer"`, `"shutdown"`)
-  - Open local directories (`"open downloads folder"`)
-- **Smart Adaptive Learning**: Teach the assistant custom commands (`"when I say yt, open youtube"`).
-- **Productivity Tools**: Built-in alarms, timers, notes, page summarization, screenshot capture, and QR code generation.
+Unlike other AI extensions that require cloud APIs and paid subscriptions, Jarvis's core automation engine runs **100% locally and offline**. It’s lightning fast, highly secure, and incredibly powerful.
 
-## 🛠️ Installation
+## 🚀 Key Features
 
-### 1. Load the Chrome Extension
-1. Open Google Chrome and navigate to `chrome://extensions`.
-2. Enable **Developer mode** in the top right corner.
-3. Click **Load unpacked** and select the folder containing this extension (`d:\New folder (3)`).
+### 🎙️ Advanced Voice Control (Hands-Free)
+Tired of clicking through endless menus? Just click the mic or use the `Alt+J` shortcut and say:
+- *"Open YouTube and Gmail"*
+- *"Close all other tabs"*
+- *"Set a timer for 10 minutes"*
+Jarvis uses the Web Speech API to understand and execute your commands instantly.
 
-### 2. Setup the Native Desktop Host (Windows Only)
-To allow the extension to control your desktop (open apps, install software, etc.):
-1. Ensure you have **Node.js** installed on your computer.
-2. Navigate into the `native-host` directory.
-3. Double-click the `install.bat` file.
-4. This will register the `com.jarvis.desktop` native host in your Windows Registry so Chrome can communicate with it securely.
+### 🧠 Smart Multi-Step AI Brain
+Jarvis can handle complex, chained tasks to automate your workflow. Just connect commands with "and then":
+- *"Open Amazon and then search for laptops and then switch to the next tab"*
 
-## 📝 Example Commands
+### 🎯 Floating Command Palette
+Access Jarvis anywhere, on any website! Press `Ctrl+Shift+J` to open the Spotlight-style **Floating Command Palette**. Type your intent, and Jarvis executes it without you ever leaving your current page.
 
-### Tab & Window Management
-- `"close all other tabs"`
-- `"group these tabs as work"`
-- `"new incognito window"`
+### 🤖 Custom Macro Engine
+Record your frequent workflows and replay them with a single command!
+1. *"Record a macro called Morning Routine"*
+2. Perform your actions (open news, check email, open calendar).
+3. *"Stop recording"*
+Next day, just say *"Run Morning Routine"* and watch Jarvis automate your life.
 
-### Page Interaction
-- `"scroll down"`
-- `"copy title"`
-- `"find [word] on page"`
-- `"screenshot"`
+### 🔍 Lightning-Fast Tab & Window Management
+Never lose a tab again. Jarvis features fuzzy-search tab switching:
+- *"Find the Wikipedia tab"*
+- *"Close all YouTube tabs"*
+- *"Group tabs as Research"*
 
-### Desktop Automation (Requires Native Host)
-- `"open notepad"`
-- `"install firefox"`
-- `"lock my computer"`
+### 🎨 Premium Glassmorphism UI
+Interact with a beautiful, animated AI avatar that reacts to your voice, pulsates when thinking, and provides real-time status updates with integrated Synth-Audio sound effects for a deeply immersive experience.
 
-## 🔧 Architecture
+## ⚡ What Can Jarvis Do?
 
-- **`manifest.json` (V3)**: Configures permissions (`offscreen`, `nativeMessaging`, etc.).
-- **`background.js`**: Central event router, manages timers, and communicates with the Native Host.
-- **`sidepanel.js`**: The chat UI and command execution dispatcher.
-- **`content.js`**: Injected into web pages to perform DOM operations (scrolling, clicking, reading).
-- **`offscreen.html / js`**: Hosts the Web Speech API to provide continuous voice recognition without needing a visible tab.
-- **`modules/ai-brain.js` & `command-patterns.js`**: The local intelligence engine that uses regex patterns to extract user intents.
-- **`native-host/jarvis-host.js`**: The Node.js application that executes OS-level commands (child_process).
+Over **150+ browser intents** are supported out of the box:
+* **Navigation**: *"Go to google.com"*, *"Search for AI news"*
+* **Tabs**: *"Close duplicate tabs"*, *"Mute this tab"*, *"Duplicate this tab"*
+* **Windows**: *"Open incognito window"*, *"Minimize window"*
+* **Bookmarks & History**: *"Bookmark this page"*, *"Clear my history"*
+* **Page Interaction**: *"Scroll to bottom"*, *"Take a screenshot"*, *"Zoom in"*
+* **Productivity**: *"Set an alarm for 5 PM"*, *"Save a note"*
+
+## 🔒 Privacy First. 100% Offline.
+Your data is yours. Jarvis's powerful intent-matching engine runs entirely in your browser using optimized regex patterns and Levenshtein distance matching. **No internet connection is required** to execute commands, ensuring maximum privacy and zero latency.
+
+## ⌨️ Global Shortcuts
+- **Alt+J**: Open the Jarvis Side Panel
+- **Ctrl+Shift+J**: Open the Floating Command Palette
+- **ArrowUp/Down**: Navigate command history in the chat box
+
+---
+*Elevate your browsing with Jarvis today — your personal AI assistant for the web.*
