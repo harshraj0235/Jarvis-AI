@@ -22,7 +22,8 @@ const LearningEngine = (() => {
    */
   async function init() {
     try {
-      const stored = await chrome.storage.local.get(STORAGE_KEY);
+      // PRO UPGRADE: Using chrome.storage.sync instead of local for Cross-Device Cloud Sync
+      const stored = await chrome.storage.sync.get(STORAGE_KEY);
       if (stored[STORAGE_KEY]) {
         const data = stored[STORAGE_KEY];
         learnedAliases = data.aliases || {};
@@ -30,7 +31,7 @@ const LearningEngine = (() => {
         commandFrequency = data.frequency || {};
         corrections = data.corrections || {};
         customPatterns = data.customPatterns || [];
-        console.log(`[Jarvis] Learning engine loaded: ${Object.keys(learnedAliases).length} aliases, ${commandHistory.length} history items`);
+        console.log(`[Jarvis] Learning engine loaded from Cloud Sync: ${Object.keys(learnedAliases).length} aliases, ${commandHistory.length} history items`);
       }
     } catch (e) {
       // Fallback to localStorage if chrome.storage isn't available (sidepanel context)
@@ -61,7 +62,8 @@ const LearningEngine = (() => {
     };
 
     try {
-      await chrome.storage.local.set({ [STORAGE_KEY]: data });
+      // PRO UPGRADE: Using chrome.storage.sync instead of local
+      await chrome.storage.sync.set({ [STORAGE_KEY]: data });
     } catch (e) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));

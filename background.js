@@ -10,8 +10,10 @@ let notes = [];          // { text, timestamp }
 let offscreenCreated = false;
 
 // Load persisted state from storage (survives service worker sleep)
-chrome.storage.local.get(['jarvis_notes', 'jarvis_timers'], (result) => {
-  notes = result.jarvis_notes || [];
+chrome.storage.sync.get(['jarvis_notes'], (syncResult) => {
+  notes = syncResult.jarvis_notes || [];
+});
+chrome.storage.local.get(['jarvis_timers'], (result) => {
   
   // Restore timers — prune any that have already expired
   const savedTimers = result.jarvis_timers || {};
@@ -671,7 +673,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // ── Notes ──────────────────────────────────────────────
     case 'SAVE_NOTE':
       notes.push({ text: data.text, timestamp: Date.now() });
-      chrome.storage.local.set({ jarvis_notes: notes });
+      chrome.storage.sync.set({ jarvis_notes: notes });
       sendResponse({ success: true, noteIndex: notes.length, text: data.text });
       return false;
 
@@ -682,7 +684,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'DELETE_NOTE':
       if (data.index >= 0 && data.index < notes.length) {
         const removed = notes.splice(data.index, 1)[0];
-        chrome.storage.local.set({ jarvis_notes: notes });
+        chrome.storage.sync.set({ jarvis_notes: notes });
         sendResponse({ success: true, deleted: removed.text });
       } else {
         sendResponse({ error: 'Invalid note index' });
@@ -692,7 +694,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'CLEAR_NOTES':
       const count = notes.length;
       notes = [];
-      chrome.storage.local.set({ jarvis_notes: notes });
+      chrome.storage.sync.set({ jarvis_notes: notes });
       sendResponse({ success: true, count });
       return false;
 

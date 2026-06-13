@@ -1,7 +1,7 @@
 {
   "name": "com.jarvis.desktop",
   "description": "Native host for Jarvis AI Browser Agent",
-  "path": "jarvis-host.bat",
+  "path": "JarvisDesktop.exe",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://*/*"
