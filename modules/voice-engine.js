@@ -13,6 +13,7 @@ const VoiceEngine = (() => {
   let onErrorCallback = null;
   let onEndCallback = null;
   let continuousMode = false;
+  let language = 'en-US';
 
   // Check browser support
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -32,7 +33,7 @@ const VoiceEngine = (() => {
     recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = true;
-    recognition.lang = options.lang || 'en-US';
+    recognition.lang = options.lang || language;
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event) => {
@@ -154,6 +155,16 @@ const VoiceEngine = (() => {
   }
 
   /**
+   * Set voice recognition language
+   */
+  function setLanguage(lang) {
+    language = lang;
+    if (recognition) {
+      recognition.lang = lang;
+    }
+  }
+
+  /**
    * Speak text using speech synthesis
    */
   function speak(text, options = {}) {
@@ -200,6 +211,7 @@ const VoiceEngine = (() => {
     startListening,
     stopListening,
     setContinuousMode,
+    setLanguage,
     speak,
     stopSpeaking,
     onResult,

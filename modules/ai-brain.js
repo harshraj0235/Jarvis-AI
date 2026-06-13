@@ -135,14 +135,45 @@ const AIBrain = (() => {
     return fixed.join(' ').replace(/\s+/g, ' ').trim();
   }
 
+  let conversationMemory = [];
+  let lastSubject = null;
+
   /**
    * Process user input — LOCAL-FIRST, AI-FREE for commands
    */
   async function processInput(input) {
     if (!input || typeof input !== 'string') return { intent: 'none', data: {}, response: "I didn't catch that." };
 
+    // Update memory
+    conversationMemory.push({ role: 'user', content: input });
+    if (conversationMemory.length > 10) conversationMemory.shift();
+
+    // ── Multi-step Command Chain ────────────────────────────
+    // Split by " and then ", " then ", " after that ", " and "
+    const connectors = /\s+(?:and then|then|after that|and)\s+/i;
+    if (connectors.test(input) && !input.toLowerCase().includes('search')) {
+      const steps = input.split(connectors).map(s => s.trim()).filter(s => s);
+      if (steps.length > 1) {
+        const results = [];
+        for (const step of steps) {
+          results.push(await processSingleInput(step));
+        }
+        return results;
+      }
+    }
+
+    return await processSingleInput(input);
+  }
+
+  async function processSingleInput(input) {
     // Normalize input to handle common voice transcription typos
-    const normalizedInput = normalizeInput(input);
+    let normalizedInput = normalizeInput(input);
+    
+    // Pronoun resolution
+    if (lastSubject) {
+      normalizedInput = normalizedInput.replace(/\b(it|that|them)\b/gi, lastSubject);
+    }
+    
     const trimmed = normalizedInput.trim();
     
     if (!trimmed) {
@@ -160,12 +191,18 @@ const AIBrain = (() => {
     // 2. Try local pattern matching (instant, no API)
     const localMatch = CommandPatterns.match(trimmed);
     if (localMatch) {
+      if (localMatch.data && (localMatch.data.url || localMatch.data.target)) {
+        lastSubject = localMatch.data.target || localMatch.data.url;
+      }
       return { intent: localMatch.intent, data: localMatch.data, response: null };
     }
 
     // 3. Try smart fallback — guess closest command
     const guess = smartGuess(trimmed);
     if (guess) {
+      if (guess.data && (guess.data.url || guess.data.target)) {
+        lastSubject = guess.data.target || guess.data.url;
+      }
       return guess;
     }
 
@@ -336,24 +373,29 @@ const AIBrain = (() => {
 
     // Try AI summarization
     try {
+      // Build context messages
+      const messages = [
+        { role: 'system', content: 'You are a helpful assistant. Provide concise, clear summaries using bullet points.' },
+        ...conversationMemory.slice(0, -1), // previous conversation
+        { role: 'user', content: `Summarize this webpage content in 3-4 concise bullet points. URL: ${pageUrl}\n\nContent:\n${content}` }
+      ];
+
       const response = await fetch('https://text.pollinations.ai/openai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'openai',
-          messages: [{
-            role: 'system',
-            content: 'You are a helpful assistant. Provide concise, clear summaries using bullet points.'
-          }, {
-            role: 'user',
-            content: `Summarize this webpage content in 3-4 concise bullet points. URL: ${pageUrl}\n\nContent:\n${content}`
-          }]
+          messages: messages
         })
       });
 
       if (response.ok) {
         const json = await response.json();
-        return json.choices?.[0]?.message?.content || localSummarize(pageText);
+        const aiResponse = json.choices?.[0]?.message?.content;
+        if (aiResponse) {
+          conversationMemory.push({ role: 'assistant', content: aiResponse });
+          return aiResponse;
+        }
       }
     } catch (e) {}
 

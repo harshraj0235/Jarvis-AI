@@ -340,6 +340,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .catch(err => sendResponse({ error: err.message }));
       return true;
 
+    case 'FIND_TAB_BY_TITLE':
+      findTabByTitle(data.title)
+        .then(res => sendResponse(res))
+        .catch(err => sendResponse({ error: err.message }));
+      return true;
+
     case 'DUPLICATE_TAB':
       duplicateTab()
         .then(res => sendResponse(res))
@@ -578,6 +584,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'PAGE_STATS':
     case 'QR_CODE':
     case 'PRINT_PAGE':
+    case 'SHOW_GRID':
+    case 'HIDE_GRID':
+    case 'CLICK_GRID':
       executeContentAction(action.replace(/_/g, '_'), data)
         .then(res => sendResponse(res))
         .catch(err => sendResponse({ error: err.message }));
@@ -874,6 +883,23 @@ async function switchToTabByIndex(index) {
   const targetIndex = Math.max(0, Math.min(index - 1, allTabs.length - 1));
   await chrome.tabs.update(allTabs[targetIndex].id, { active: true });
   return { success: true, switchedTo: allTabs[targetIndex].title };
+}
+
+async function findTabByTitle(title) {
+  const allTabs = await chrome.tabs.query({ currentWindow: true });
+  const lowerTitle = title.toLowerCase();
+  
+  // Fuzzy match or exact match
+  const match = allTabs.find(t => 
+    (t.title && t.title.toLowerCase().includes(lowerTitle)) || 
+    (t.url && t.url.toLowerCase().includes(lowerTitle))
+  );
+
+  if (match) {
+    await chrome.tabs.update(match.id, { active: true });
+    return { success: true, switchedTo: match.title };
+  }
+  return { error: `Could not find a tab matching "${title}"` };
 }
 
 async function duplicateTab() {

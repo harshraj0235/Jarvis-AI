@@ -138,6 +138,18 @@ const CommandPatterns = (() => {
       intent: 'switchToTab',
       extract: (m) => ({ index: parseInt(m[1]) })
     },
+    // Switch to tab by title
+    {
+      regex: /^(?:switch|go)\s+to\s+(?:the\s+)?(.+?)\s+tab$/i,
+      intent: 'switchToTabByTitle',
+      extract: (m) => ({ title: m[1].trim() })
+    },
+    // Find tab by title
+    {
+      regex: /^(?:find|search\s+for)\s+(?:the\s+)?(.+?)\s+tab$/i,
+      intent: 'switchToTabByTitle',
+      extract: (m) => ({ title: m[1].trim() })
+    },
     // Duplicate tab
     {
       regex: /^(?:duplicate|clone|copy)\s+(?:this\s+)?tab$/i,
@@ -397,6 +409,25 @@ const CommandPatterns = (() => {
     },
 
     // ══════════════════════════════════════════════════════
+    // ── SMART GRID ────────────────────────────────────────
+    // ══════════════════════════════════════════════════════
+    {
+      regex: /^(?:show|enable)\s+(?:the\s+)?grid$/i,
+      intent: 'showGrid',
+      extract: () => ({})
+    },
+    {
+      regex: /^(?:hide|disable|remove)\s+(?:the\s+)?grid$/i,
+      intent: 'hideGrid',
+      extract: () => ({})
+    },
+    {
+      regex: /^click\s+(?:number\s+)?(\d+)$/i,
+      intent: 'clickGrid',
+      extract: (m) => ({ number: parseInt(m[1]) })
+    },
+
+    // ══════════════════════════════════════════════════════
     // ── PAGE TOOLS ────────────────────────────────────────
     // ══════════════════════════════════════════════════════
 
@@ -610,6 +641,30 @@ const CommandPatterns = (() => {
     {
       regex: /^(?:cancel|stop|remove|delete|clear)\s+(?:all\s+)?timers?$/i,
       intent: 'cancelTimer',
+      extract: () => ({})
+    },
+
+    // ══════════════════════════════════════════════════════
+    // ── MACROS & AUTOMATION ───────────────────────────────
+    // ══════════════════════════════════════════════════════
+    {
+      regex: /^(?:start\s+)?record(?:ing)?\s+(?:a\s+)?macro\s+(?:called|named)\s+(.+)$/i,
+      intent: 'recordMacro',
+      extract: (m) => ({ name: m[1].trim() })
+    },
+    {
+      regex: /^(?:stop|end|finish)\s+record(?:ing)?(?:\s+(?:the\s+)?macro)?$/i,
+      intent: 'stopRecordingMacro',
+      extract: () => ({})
+    },
+    {
+      regex: /^(?:run|play|execute)\s+(?:the\s+)?macro\s+(?:called|named)?\s*(.+)$/i,
+      intent: 'runMacro',
+      extract: (m) => ({ name: m[1].trim() })
+    },
+    {
+      regex: /^(?:show|list|view|get)\s+(?:all\s+)?macros$/i,
+      intent: 'listMacros',
       extract: () => ({})
     },
 

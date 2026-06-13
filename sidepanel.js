@@ -26,8 +26,12 @@
     voiceResponse: false,
     continuousListen: false,
     confirmDestructive: true,
-    sounds: true
+    sounds: true,
+    voiceLanguage: 'en-US'
   };
+
+  let commandHistory = [];
+  let historyIndex = -1;
 
   // ── Initialize ────────────────────────────────────────────
   async function init() {
@@ -36,6 +40,14 @@
     setupEventListeners();
     setupVoiceEngine();
     setupConfirmHandler();
+
+    MacroEngine.init();
+    
+    // Load command history
+    try {
+      const savedHist = localStorage.getItem('jarvis-cmd-history');
+      if (savedHist) commandHistory = JSON.parse(savedHist);
+    } catch(e) {}
 
     // Show ready status
     updateStatus('Ready to assist', 'ready');
@@ -56,6 +68,14 @@
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         handleSend();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        navigateHistory(-1);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        navigateHistory(1);
+      } else {
+        if (settings.sounds) SoundEngine.playKeystroke();
       }
     });
 
@@ -104,6 +124,13 @@
 
     document.getElementById('setting-sounds')?.addEventListener('change', (e) => {
       settings.sounds = e.target.checked;
+      SoundEngine.setEnabled(e.target.checked);
+      saveSettings();
+    });
+
+    document.getElementById('setting-voice-lang')?.addEventListener('change', (e) => {
+      settings.voiceLanguage = e.target.value;
+      VoiceEngine.setLanguage(e.target.value);
       saveSettings();
     });
 
@@ -165,6 +192,7 @@
         ChatRenderer.addAgentMessage(message, {
           actionCard: { type: 'warning', title: 'Voice Error', content: message }
         });
+        if (settings.sounds) SoundEngine.playError();
       }
     });
 
@@ -190,11 +218,13 @@
       micBtn.classList.remove('recording');
       hideVoiceTranscript();
       updateStatus('Ready to assist', 'ready');
+      if (settings.sounds) SoundEngine.playVoiceEnd();
     } else {
       const started = VoiceEngine.startListening();
       if (started) {
         micBtn.classList.add('recording');
         updateStatus('Listening...', 'listening');
+        if (settings.sounds) SoundEngine.playVoiceStart();
       }
     }
   }
@@ -218,7 +248,16 @@
     chatInput.value = '';
     sendBtn.classList.remove('active');
     autoResizeInput();
+    
+    // Add to history
+    if (commandHistory[commandHistory.length - 1] !== text) {
+      commandHistory.push(text);
+      if (commandHistory.length > 50) commandHistory.shift();
+      localStorage.setItem('jarvis-cmd-history', JSON.stringify(commandHistory));
+    }
+    historyIndex = -1;
 
+    if (settings.sounds) SoundEngine.playClick();
     processCommand(text);
   }
 
@@ -233,16 +272,30 @@
     updateStatus('Thinking...', 'thinking');
 
     try {
+      // Record macro if active
+      if (MacroEngine.isRecording) {
+        MacroEngine.recordAction('RAW_TEXT', { text: input });
+      }
+
       // Classify intent via AI Brain
       const result = await AIBrain.processInput(input);
 
       // Map intent to action
-      await handleIntent(result);
+      if (Array.isArray(result)) {
+        for (const res of result) {
+          await handleIntent(res);
+          await new Promise(r => setTimeout(r, 600)); // Delay between actions
+        }
+      } else {
+        await handleIntent(result);
+      }
     } catch (err) {
       console.error('[Jarvis] Process error:', err);
       ChatRenderer.addAgentMessage("Oops, something went wrong. Please try again.", {
         actionCard: { type: 'error', title: 'Error', content: err.message }
       });
+      if (settings.sounds) SoundEngine.playError();
+      updateStatus('Error', 'error');
     } finally {
       isProcessing = false;
       updateStatus('Ready to assist', 'ready');
@@ -263,6 +316,24 @@
     // If intent is help
     if (intent === 'help') {
       ChatRenderer.addAgentMessage(AIBrain.getHelpText());
+      return;
+    }
+
+    // Macros (Local to sidepanel)
+    if (intent === 'recordMacro') {
+      MacroEngine.startRecording(data.name);
+      return;
+    }
+    if (intent === 'stopRecordingMacro') {
+      MacroEngine.stopRecording();
+      return;
+    }
+    if (intent === 'listMacros') {
+      MacroEngine.listMacros();
+      return;
+    }
+    if (intent === 'runMacro') {
+      await MacroEngine.runMacro(data.name, processCommand);
       return;
     }
 
@@ -300,6 +371,7 @@
       nextTab: 'NEXT_TAB',
       prevTab: 'PREV_TAB',
       switchToTab: 'SWITCH_TO_TAB',
+      switchToTabByTitle: 'FIND_TAB_BY_TITLE',
       duplicateTab: 'DUPLICATE_TAB',
       pinTab: 'PIN_TAB',
       unpinTab: 'UNPIN_TAB',
@@ -358,6 +430,9 @@
       qrCode: 'QR_CODE',
       printPage: 'PRINT_PAGE',
       viewSource: 'VIEW_SOURCE',
+      showGrid: 'SHOW_GRID',
+      hideGrid: 'HIDE_GRID',
+      clickGrid: 'CLICK_GRID',
       // Screenshot & Zoom
       screenshot: 'SCREENSHOT',
       fullScreenshot: 'SCREENSHOT',
@@ -426,8 +501,13 @@
         ChatRenderer.addAgentMessage(`I couldn't do that.`, {
           actionCard: { type: 'error', title: 'Failed', content: result.error }
         });
+        if (settings.sounds) SoundEngine.playError();
+        updateStatus('Ready to assist', 'ready');
         return;
       }
+
+      if (settings.sounds) SoundEngine.playSuccess();
+      updateStatus('Ready to assist', 'ready');
 
       // Handle the response based on action type
       handleActionResult(action, result, intent, data);
@@ -519,6 +599,10 @@
 
       case 'SWITCH_TO_TAB':
         ChatRenderer.addAgentMessage(`📑 Switched to tab: **${result.switchedTo}**`);
+        break;
+
+      case 'FIND_TAB_BY_TITLE':
+        ChatRenderer.addAgentMessage(`📑 Found and switched to: **${result.switchedTo}**`);
         break;
 
       case 'DUPLICATE_TAB':
@@ -639,6 +723,24 @@
           ChatRenderer.addAgentMessage(`📥 Recent downloads (${result.downloads.length}):`, { listItems: items });
         } else {
           ChatRenderer.addAgentMessage('No recent downloads found.');
+        }
+        break;
+
+      case 'SHOW_GRID':
+        ChatRenderer.addAgentMessage(`🔢 Smart grid enabled. Say "click 1" or click a number. You can also say "hide grid".`);
+        speakIfEnabled('Smart grid enabled.');
+        break;
+
+      case 'HIDE_GRID':
+        ChatRenderer.addAgentMessage(`🔢 Smart grid disabled.`);
+        speakIfEnabled('Grid disabled.');
+        break;
+
+      case 'CLICK_GRID':
+        if (result.success) {
+          ChatRenderer.addAgentMessage(`🖱️ Clicked element number **${data.number}**.`);
+        } else {
+          ChatRenderer.addAgentMessage(`❌ Could not find element number **${data.number}**.`);
         }
         break;
 
@@ -994,11 +1096,19 @@
     const continuousListenEl = document.getElementById('setting-continuous-listen');
     const confirmDestructiveEl = document.getElementById('setting-confirm-destructive');
     const soundsEl = document.getElementById('setting-sounds');
+    const voiceLangEl = document.getElementById('setting-voice-lang');
 
     if (voiceResponseEl) voiceResponseEl.checked = settings.voiceResponse;
     if (continuousListenEl) continuousListenEl.checked = settings.continuousListen;
     if (confirmDestructiveEl) confirmDestructiveEl.checked = settings.confirmDestructive;
-    if (soundsEl) soundsEl.checked = settings.sounds;
+    if (soundsEl) {
+      soundsEl.checked = settings.sounds;
+      SoundEngine.setEnabled(settings.sounds);
+    }
+    if (voiceLangEl && settings.voiceLanguage) {
+      voiceLangEl.value = settings.voiceLanguage;
+      VoiceEngine.setLanguage(settings.voiceLanguage);
+    }
   }
 
   function saveSettings() {
@@ -1011,10 +1121,38 @@
       const dotColors = {
         ready: 'var(--accent-green)',
         listening: 'var(--accent-red)',
-        thinking: 'var(--accent-orange)'
+        thinking: 'var(--accent-orange)',
+        error: 'var(--accent-red)'
       };
       statusText.innerHTML = `<span class="status-dot" style="background:${dotColors[state] || dotColors.ready}; box-shadow: 0 0 8px ${dotColors[state] || dotColors.ready}"></span>&nbsp;${text}`;
     }
+
+    // Update Orb state
+    const orb = document.getElementById('ai-orb');
+    if (orb) {
+      orb.className = 'ai-orb'; // Reset
+      if (state === 'listening') orb.classList.add('orb-listening');
+      else if (state === 'thinking') orb.classList.add('orb-thinking');
+      else if (state === 'error') orb.classList.add('orb-error');
+      else orb.classList.add('orb-idle');
+    }
+  }
+
+  function navigateHistory(dir) {
+    if (commandHistory.length === 0) return;
+    
+    if (dir === -1) { // Up
+      if (historyIndex < commandHistory.length - 1) historyIndex++;
+    } else { // Down
+      if (historyIndex > -1) historyIndex--;
+    }
+    
+    if (historyIndex === -1) {
+      chatInput.value = '';
+    } else {
+      chatInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+    }
+    autoResizeInput();
   }
 
   function speakIfEnabled(text) {

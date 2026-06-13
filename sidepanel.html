@@ -12,13 +12,14 @@
     <!-- ── Header ──────────────────────────────────────── -->
     <header class="panel-header" id="panel-header">
       <div class="header-brand">
-        <div class="logo-icon" id="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
-            <line x1="9" y1="22" x2="15" y2="22"/>
-            <line x1="10" y1="19" x2="14" y2="19"/>
-            <circle cx="12" cy="9" r="2" fill="currentColor" opacity="0.3"/>
-          </svg>
+        <!-- Animated AI Orb -->
+        <div class="ai-orb-wrapper" id="ai-orb-wrapper">
+          <div class="ai-orb" id="ai-orb">
+            <div class="ai-orb-core"></div>
+            <div class="ai-orb-ring ai-orb-ring-1"></div>
+            <div class="ai-orb-ring ai-orb-ring-2"></div>
+            <div class="ai-orb-ripple"></div>
+          </div>
         </div>
         <div class="header-text">
           <h1 class="header-title">Jarvis AI</h1>
@@ -56,15 +57,21 @@
     <div class="chat-area" id="chat-area">
       <!-- Welcome screen (shown initially) -->
       <div class="welcome-screen" id="welcome-screen">
-        <div class="welcome-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
-            <line x1="9" y1="22" x2="15" y2="22"/>
-            <line x1="10" y1="19" x2="14" y2="19"/>
-          </svg>
+        <div class="welcome-orb-container">
+          <div class="welcome-orb">
+            <div class="welcome-orb-core"></div>
+            <div class="welcome-orb-ring"></div>
+            <div class="welcome-orb-particles">
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
         </div>
         <h2 class="welcome-title">Hey, I'm Jarvis</h2>
         <p class="welcome-subtitle">Your AI browser assistant. Tell me what to do — by voice or text — and I'll handle it.</p>
+        <div class="welcome-shortcuts">
+          <span class="shortcut-badge">Alt+J <span class="shortcut-label">Panel</span></span>
+          <span class="shortcut-badge">Ctrl+Shift+J <span class="shortcut-label">Quick Command</span></span>
+        </div>
         <div class="welcome-suggestions" id="welcome-suggestions">
           <div class="welcome-suggestion" data-command="Open YouTube">
             <span class="ws-icon">🌐</span>
@@ -82,6 +89,10 @@
             <span class="ws-icon">⭐</span>
             <span>"Bookmark this page"</span>
           </div>
+          <div class="welcome-suggestion" data-command="Summarize this page">
+            <span class="ws-icon">📝</span>
+            <span>"Summarize this page"</span>
+          </div>
           <div class="welcome-suggestion" data-command="What can you do?">
             <span class="ws-icon">🤖</span>
             <span>"What can you do?"</span>
@@ -97,6 +108,7 @@
       <button class="quick-action-btn" data-command="Screenshot"><span class="qa-icon">📸</span>Screenshot</button>
       <button class="quick-action-btn" data-command="Summarize this page"><span class="qa-icon">📝</span>Summarize</button>
       <button class="quick-action-btn" data-command="Show bookmarks"><span class="qa-icon">⭐</span>Bookmarks</button>
+      <button class="quick-action-btn" data-command="Show grid"><span class="qa-icon">🔢</span>Grid</button>
     </div>
 
     <!-- ── Input Area ──────────────────────────────────── -->
@@ -108,6 +120,15 @@
           Listening...
         </div>
         <div class="voice-transcript-text" id="voice-transcript-text">...</div>
+      </div>
+
+      <!-- Autocomplete dropdown -->
+      <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
+
+      <!-- Recording indicator -->
+      <div class="recording-indicator" id="recording-indicator" style="display:none;">
+        <span class="rec-dot"></span> Recording macro...
+        <button class="rec-stop-btn" id="rec-stop-btn">Stop</button>
       </div>
 
       <div class="input-wrapper" id="input-wrapper">
@@ -159,6 +180,26 @@
                 <span class="toggle-slider"></span>
               </label>
             </div>
+            <div class="setting-item">
+              <div>
+                <div class="setting-label">Voice Language</div>
+                <div class="setting-desc">Recognition language</div>
+              </div>
+              <select class="setting-select" id="setting-voice-lang">
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="es-ES">Spanish</option>
+                <option value="fr-FR">French</option>
+                <option value="de-DE">German</option>
+                <option value="ja-JP">Japanese</option>
+                <option value="ko-KR">Korean</option>
+                <option value="zh-CN">Chinese</option>
+                <option value="ar-SA">Arabic</option>
+                <option value="pt-BR">Portuguese</option>
+                <option value="ru-RU">Russian</option>
+              </select>
+            </div>
           </div>
           <div class="settings-group">
             <div class="settings-group-title">Behavior</div>
@@ -175,7 +216,7 @@
             <div class="setting-item">
               <div>
                 <div class="setting-label">Sound Effects</div>
-                <div class="setting-desc">Play sounds for actions</div>
+                <div class="setting-desc">Audio feedback for actions</div>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="setting-sounds" checked>
@@ -184,11 +225,26 @@
             </div>
           </div>
           <div class="settings-group">
+            <div class="settings-group-title">Shortcuts</div>
+            <div class="setting-item">
+              <div>
+                <div class="setting-label">Open Side Panel</div>
+                <div class="setting-desc">Alt + J</div>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div>
+                <div class="setting-label">Quick Command Palette</div>
+                <div class="setting-desc">Ctrl + Shift + J (on any page)</div>
+              </div>
+            </div>
+          </div>
+          <div class="settings-group">
             <div class="settings-group-title">About</div>
             <div class="setting-item">
               <div>
                 <div class="setting-label">Jarvis AI Browser Agent</div>
-                <div class="setting-desc">Version 1.0.0 • Built with ❤️</div>
+                <div class="setting-desc">Version 2.0.0 • Built with ❤️</div>
               </div>
             </div>
           </div>
@@ -202,6 +258,8 @@
   <script src="modules/chat-renderer.js"></script>
   <script src="modules/voice-engine.js"></script>
   <script src="modules/ai-brain.js"></script>
+  <script src="modules/sound-engine.js"></script>
+  <script src="modules/macro-engine.js"></script>
   <script src="sidepanel.js"></script>
 </body>
 </html>

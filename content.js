@@ -16,6 +16,7 @@
   let readingModeActive = false;
   let darkModeActive = false;
   let findHighlights = [];
+  let smartGridMap = {}; // number -> HTMLElement
 
   // ── Message Listener ────────────────────────────────────
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -60,6 +61,21 @@
         case 'FIND_IN_PAGE':
           const findResult = findInPage(data.query);
           sendResponse({ success: true, ...findResult });
+          return false;
+
+        case 'SHOW_GRID':
+          const count = showSmartGrid();
+          sendResponse({ success: true, count });
+          return false;
+
+        case 'HIDE_GRID':
+          hideSmartGrid();
+          sendResponse({ success: true });
+          return false;
+
+        case 'CLICK_GRID':
+          const clicked = clickSmartGridNumber(data.number);
+          sendResponse({ success: clicked });
           return false;
 
         case 'READING_MODE':
@@ -583,6 +599,71 @@
       el.style.boxShadow = orig.boxShadow;
       el.style.transition = orig.transition;
     }, 1500);
+  }
+
+  // ── Smart Grid ────────────────────────────────────────────
+  function showSmartGrid() {
+    hideSmartGrid();
+    smartGridMap = {};
+    let counter = 1;
+
+    // Find all clickable elements
+    const elements = document.querySelectorAll(
+      'button, a, input, select, textarea, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [onclick], [tabindex]'
+    );
+
+    const container = document.createElement('div');
+    container.id = 'jarvis-smart-grid-container';
+    container.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2147483647;';
+    
+    for (const el of elements) {
+      if (!isVisible(el)) continue;
+      const rect = el.getBoundingClientRect();
+      // Need absolute position on page
+      const top = rect.top + window.scrollY;
+      const left = rect.left + window.scrollX;
+
+      const label = document.createElement('div');
+      label.textContent = counter;
+      label.style.cssText = `
+        position: absolute;
+        top: ${top}px;
+        left: ${left}px;
+        background: #ffeb3b;
+        color: #000;
+        font-size: 12px;
+        font-weight: bold;
+        padding: 2px 4px;
+        border-radius: 3px;
+        border: 1px solid #000;
+        z-index: 2147483647;
+        pointer-events: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      `;
+      container.appendChild(label);
+      smartGridMap[counter] = el;
+      counter++;
+    }
+
+    document.body.appendChild(container);
+    return counter - 1;
+  }
+
+  function hideSmartGrid() {
+    const container = document.getElementById('jarvis-smart-grid-container');
+    if (container) container.remove();
+    smartGridMap = {};
+  }
+
+  function clickSmartGridNumber(number) {
+    const el = smartGridMap[number];
+    if (el) {
+      highlightElement(el);
+      setTimeout(() => el.click(), 300);
+      hideSmartGrid();
+      return true;
+    }
+    return false;
   }
 
   function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
